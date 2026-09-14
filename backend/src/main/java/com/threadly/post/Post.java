@@ -38,13 +38,19 @@ public class Post extends Auditable {
 	@JoinColumn(name = "author_id", nullable = false)
 	private User author;
 
-	@Column(nullable = false, length = MAX_LENGTH)
+	/** Null for a plain repost, which has no words of its own. */
+	@Column(length = MAX_LENGTH)
 	private String content;
 
 	/** The post being replied to, or {@code null} for a root post. */
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "parent_id")
 	private Post parent;
+
+	/** The post being reposted or quoted, or {@code null} for an original post. */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "repost_of_id")
+	private Post repostOf;
 
 	@Column(name = "deleted_at")
 	private Instant deletedAt;
@@ -53,18 +59,33 @@ public class Post extends Auditable {
 	@Column(name = "edited_at")
 	private Instant editedAt;
 
-	private Post(User author, String content, Post parent) {
+	private Post(User author, String content, Post parent, Post repostOf) {
 		this.author = author;
 		this.content = content;
 		this.parent = parent;
+		this.repostOf = repostOf;
 	}
 
 	public static Post write(User author, String content) {
-		return new Post(author, content.strip(), null);
+		return new Post(author, content.strip(), null, null);
 	}
 
 	public static Post replyTo(Post parent, User author, String content) {
-		return new Post(author, content.strip(), parent);
+		return new Post(author, content.strip(), parent, null);
+	}
+
+	/** A plain repost: no text, just an endorsement. */
+	public static Post repost(Post original, User author) {
+		return new Post(author, null, null, original);
+	}
+
+	/** A quote post: the author's own words wrapped around someone else's post. */
+	public static Post quote(Post original, User author, String content) {
+		return new Post(author, content.strip(), null, original);
+	}
+
+	public boolean isRepost() {
+		return repostOf != null;
 	}
 
 	public boolean isReply() {

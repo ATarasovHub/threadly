@@ -52,6 +52,24 @@ public class PostController {
 		return postService.repliesTo(id, cursor, limit);
 	}
 
+	@PostMapping("/posts/{id}/repost")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void repost(@PathVariable Long id) {
+		postService.repost(id);
+	}
+
+	@DeleteMapping("/posts/{id}/repost")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void undoRepost(@PathVariable Long id) {
+		postService.undoRepost(id);
+	}
+
+	@PostMapping("/posts/{id}/quote")
+	@ResponseStatus(HttpStatus.CREATED)
+	public PostResponse quote(@PathVariable Long id, @Valid @RequestBody CreatePostRequest request) {
+		return postService.quote(id, request);
+	}
+
 	@GetMapping("/posts/{id}")
 	public PostResponse findById(@PathVariable Long id) {
 		return postService.findById(id);

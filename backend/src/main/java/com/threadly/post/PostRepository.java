@@ -11,8 +11,35 @@ import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-	@Query("select p from Post p join fetch p.author where p.id = :id and p.deletedAt is null")
+	@Query("""
+			select p from Post p
+			join fetch p.author
+			left join fetch p.repostOf o
+			left join fetch o.author
+			where p.id = :id and p.deletedAt is null
+			""")
 	Optional<Post> findVisibleById(@Param("id") Long id);
+
+	boolean existsByAuthorIdAndRepostOfIdAndContentIsNullAndDeletedAtIsNull(Long authorId, Long repostOfId);
+
+	long deleteByAuthorIdAndRepostOfIdAndContentIsNull(Long authorId, Long repostOfId);
+
+	/** Repost counts for a page of posts; quote posts count too. */
+	@Query("""
+			select p.repostOf.id, count(p) from Post p
+			where p.repostOf.id in :originalIds and p.deletedAt is null
+			group by p.repostOf.id
+			""")
+	List<Object[]> countRepostsByOriginalIds(@Param("originalIds") Collection<Long> originalIds);
+
+	/** Which of these posts the viewer has plainly reposted. */
+	@Query("""
+			select p.repostOf.id from Post p
+			where p.author.id = :viewerId and p.content is null and p.deletedAt is null
+			  and p.repostOf.id in :originalIds
+			""")
+	List<Long> findRepostedIds(
+			@Param("viewerId") Long viewerId, @Param("originalIds") Collection<Long> originalIds);
 
 	@Query("""
 			select count(p) from Post p
@@ -30,6 +57,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	@Query("""
 			select p from Post p
 			join fetch p.author a
+			left join fetch p.repostOf ro
+			left join fetch ro.author
 			where p.deletedAt is null
 			  and p.parent is null
 			  and (a.id = :viewerId
@@ -42,6 +71,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	@Query("""
 			select p from Post p
 			join fetch p.author a
+			left join fetch p.repostOf ro
+			left join fetch ro.author
 			where p.deletedAt is null
 			  and p.parent is null
 			  and (a.id = :viewerId
@@ -63,6 +94,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	@Query("""
 			select p from Post p
 			join fetch p.author a
+			left join fetch p.repostOf ro
+			left join fetch ro.author
 			where p.deletedAt is null
 			  and p.parent is null
 			  and not exists (select 1 from Block b
@@ -75,6 +108,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	@Query("""
 			select p from Post p
 			join fetch p.author a
+			left join fetch p.repostOf ro
+			left join fetch ro.author
 			where p.deletedAt is null
 			  and p.parent is null
 			  and not exists (select 1 from Block b
@@ -98,6 +133,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	@Query("""
 			select p from Post p
 			join fetch p.author
+			left join fetch p.repostOf ro2
+			left join fetch ro2.author
 			where p.parent.id = :parentId and p.deletedAt is null
 			order by p.createdAt asc, p.id asc
 			""")
@@ -106,6 +143,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	@Query("""
 			select p from Post p
 			join fetch p.author
+			left join fetch p.repostOf ro2
+			left join fetch ro2.author
 			where p.parent.id = :parentId and p.deletedAt is null
 			  and (p.createdAt > :createdAt or (p.createdAt = :createdAt and p.id > :id))
 			order by p.createdAt asc, p.id asc
@@ -128,6 +167,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	@Query("""
 			select p from Post p
 			join fetch p.author a
+			left join fetch p.repostOf ro
+			left join fetch ro.author
 			where a.id = :authorId
 			  and p.deletedAt is null
 			  and p.parent is null
@@ -148,6 +189,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	@Query("""
 			select p from Post p
 			join fetch p.author a
+			left join fetch p.repostOf ro
+			left join fetch ro.author
 			where a.id = :authorId
 			  and p.deletedAt is null
 			  and p.parent is null

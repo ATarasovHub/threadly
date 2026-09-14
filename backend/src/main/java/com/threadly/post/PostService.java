@@ -12,6 +12,7 @@ import com.threadly.user.CurrentUserService;
 import com.threadly.user.User;
 import com.threadly.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,50 @@ public class PostService {
 		User me = currentUserService.require();
 		Post post = posts.save(Post.write(me, request.content()));
 		return assembler.toResponse(post, me);
+	}
+
+	/**
+	 * Reposts a post.
+	 *
+	 * <p>Idempotent, and deliberately so: the button is a toggle, and a retry must not create a
+	 * second repost. A partial unique index enforces that when requests race.
+	 */
+	@Transactional
+	public void repost(Long originalId) {
+		User me = currentUserService.require();
+		Post original = requireVisible(originalId);
+		requireNotBlocked(original.getAuthor().getId(), "No post with id " + originalId);
+
+		if (posts.existsByAuthorIdAndRepostOfIdAndContentIsNullAndDeletedAtIsNull(me.getId(), originalId)) {
+			return;
+		}
+		try {
+			posts.save(Post.repost(original, me));
+		}
+		catch (DataIntegrityViolationException e) {
+			// Concurrent duplicate; the post is reposted either way.
+		}
+	}
+
+	@Transactional
+	public void undoRepost(Long originalId) {
+		User me = currentUserService.require();
+		posts.deleteByAuthorIdAndRepostOfIdAndContentIsNull(me.getId(), originalId);
+	}
+
+	/**
+	 * Quotes a post: the caller's own words with the original attached.
+	 *
+	 * <p>Unlike a plain repost this is not idempotent — quoting the same post twice with different
+	 * commentary is a normal thing to do.
+	 */
+	@Transactional
+	public PostResponse quote(Long originalId, CreatePostRequest request) {
+		User me = currentUserService.require();
+		Post original = requireVisible(originalId);
+		requireNotBlocked(original.getAuthor().getId(), "No post with id " + originalId);
+
+		return assembler.toResponse(posts.save(Post.quote(original, me, request.content())), me);
 	}
 
 	/** Publishes a reply to an existing post. */

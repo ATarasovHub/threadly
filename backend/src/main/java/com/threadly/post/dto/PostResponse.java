@@ -19,12 +19,16 @@ public record PostResponse(
 		Instant createdAt,
 		Metrics metrics,
 		ViewerState viewer,
-		ParentRef inReplyTo) {
+		ParentRef inReplyTo,
+		RepostedPost repostOf) {
 
 	public static PostResponse of(Post post, Metrics metrics, ViewerState viewer) {
 		ParentRef inReplyTo = post.isReply()
 				? new ParentRef(post.getParent().getId(), post.getParent().getAuthor().getUsername())
 				: null;
+		// Only one level deep: a repost of a repost still shows the post that was reposted, not
+		// the whole chain, which is what clients render and what stops the response nesting away.
+		RepostedPost repostOf = post.isRepost() ? RepostedPost.from(post.getRepostOf()) : null;
 		return new PostResponse(
 				post.getId(),
 				post.getContent(),
@@ -33,7 +37,8 @@ public record PostResponse(
 				post.getCreatedAt(),
 				metrics,
 				viewer,
-				inReplyTo);
+				inReplyTo,
+				repostOf);
 	}
 
 	public record PostAuthor(Long id, String username, String displayName, String avatarUrl) {
@@ -45,13 +50,25 @@ public record PostResponse(
 		}
 	}
 
-	public record Metrics(long likes, long replies) {
+	public record Metrics(long likes, long replies, long reposts) {
 	}
 
 	/** Enough of the parent for a client to render "Replying to @andrii" and link to it. */
 	public record ParentRef(Long id, String authorUsername) {
 	}
 
-	public record ViewerState(boolean liked, boolean bookmarked) {
+	/** The post that was reposted or quoted, flattened so responses cannot nest indefinitely. */
+	public record RepostedPost(Long id, String content, PostAuthor author, Instant createdAt) {
+
+		static RepostedPost from(Post original) {
+			return new RepostedPost(
+					original.getId(),
+					original.getContent(),
+					PostAuthor.from(original),
+					original.getCreatedAt());
+		}
+	}
+
+	public record ViewerState(boolean liked, boolean bookmarked, boolean reposted) {
 	}
 }

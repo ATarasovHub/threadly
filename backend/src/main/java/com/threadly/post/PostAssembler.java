@@ -50,15 +50,23 @@ public class PostAssembler {
 			replyCounts.put((Long) row[0], (Long) row[1]);
 		}
 
+		Map<Long, Long> repostCounts = new HashMap<>();
+		for (Object[] row : postRepository.countRepostsByOriginalIds(ids)) {
+			repostCounts.put((Long) row[0], (Long) row[1]);
+		}
+		Set<Long> repostedByViewer = Set.copyOf(postRepository.findRepostedIds(viewer.getId(), ids));
+
 		return posts.stream()
 				.map(post -> PostResponse.of(
 						post,
 						new PostResponse.Metrics(
 								likeCounts.getOrDefault(post.getId(), 0L),
-								replyCounts.getOrDefault(post.getId(), 0L)),
+								replyCounts.getOrDefault(post.getId(), 0L),
+								repostCounts.getOrDefault(post.getId(), 0L)),
 						new PostResponse.ViewerState(
 								likedByViewer.contains(post.getId()),
-								savedByViewer.contains(post.getId()))))
+								savedByViewer.contains(post.getId()),
+								repostedByViewer.contains(post.getId()))))
 				.toList();
 	}
 }

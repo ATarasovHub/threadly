@@ -26,6 +26,8 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
 			select b from Bookmark b
 			join fetch b.post p
 			join fetch p.author
+			left join fetch p.repostOf o
+			left join fetch o.author
 			where b.user.id = :userId and p.deletedAt is null
 			order by b.createdAt desc, b.id desc
 			""")
@@ -35,6 +37,8 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
 			select b from Bookmark b
 			join fetch b.post p
 			join fetch p.author
+			left join fetch p.repostOf o
+			left join fetch o.author
 			where b.user.id = :userId and p.deletedAt is null
 			  and (b.createdAt < :createdAt or (b.createdAt = :createdAt and b.id < :id))
 			order by b.createdAt desc, b.id desc
