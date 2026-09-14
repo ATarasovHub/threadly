@@ -24,25 +24,28 @@ public class PostService {
 	private final UserRepository users;
 	private final CurrentUserService currentUserService;
 	private final BlockService blockService;
+	private final PostAssembler assembler;
 
 	@Transactional
 	public PostResponse create(CreatePostRequest request) {
-		Post post = Post.write(currentUserService.require(), request.content());
-		return PostResponse.from(posts.save(post));
+		User me = currentUserService.require();
+		Post post = posts.save(Post.write(me, request.content()));
+		return assembler.toResponse(post, me);
 	}
 
 	@Transactional(readOnly = true)
 	public PostResponse findById(Long id) {
 		Post post = requireVisible(id);
+		User me = currentUserService.require();
 		requireNotBlocked(post.getAuthor().getId(), "No post with id " + id);
-		return PostResponse.from(post);
+		return assembler.toResponse(post, me);
 	}
 
 	@Transactional
 	public PostResponse update(Long id, UpdatePostRequest request) {
 		Post post = requireOwned(id);
 		post.edit(request.content());
-		return PostResponse.from(post);
+		return assembler.toResponse(post, currentUserService.require());
 	}
 
 	@Transactional
@@ -58,15 +61,16 @@ public class PostService {
 				.orElseThrow(() -> new ResourceNotFoundException("No account with handle @" + username));
 
 		requireNotBlocked(author.getId(), "No account with handle @" + username);
+		User viewer = currentUserService.require();
 
-		return CursorPaging.page(
+		return CursorPaging.pageOfMany(
 				encodedCursor,
 				limit,
 				window -> posts.findAuthorTimeline(author.getId(), window),
 				(position, window) -> posts.findAuthorTimelineBefore(
 						author.getId(), position.createdAt(), position.id(), window),
 				post -> new Cursor(post.getCreatedAt(), post.getId()),
-				PostResponse::from);
+				page -> assembler.toResponses(page, viewer));
 	}
 
 	private void requireNotBlocked(Long otherAccountId, String message) {

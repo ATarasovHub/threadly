@@ -4,6 +4,7 @@ import com.threadly.common.page.Cursor;
 import com.threadly.common.page.CursorPage;
 import com.threadly.common.page.CursorPaging;
 import com.threadly.post.Post;
+import com.threadly.post.PostAssembler;
 import com.threadly.post.PostRepository;
 import com.threadly.post.dto.PostResponse;
 import com.threadly.user.CurrentUserService;
@@ -18,19 +19,20 @@ public class FeedService {
 
 	private final PostRepository posts;
 	private final CurrentUserService currentUserService;
+	private final PostAssembler assembler;
 
 	/** Posts by the accounts the caller follows, and the caller's own, newest first. */
 	@Transactional(readOnly = true)
 	public CursorPage<PostResponse> following(String cursor, int limit) {
 		User viewer = currentUserService.require();
-		return CursorPaging.page(
+		return CursorPaging.pageOfMany(
 				cursor,
 				limit,
 				window -> posts.findFollowingFeed(viewer.getId(), window),
 				(position, window) -> posts.findFollowingFeedBefore(
 						viewer.getId(), position.createdAt(), position.id(), window),
 				FeedService::positionOf,
-				PostResponse::from);
+				page -> assembler.toResponses(page, viewer));
 	}
 
 	/**
@@ -42,14 +44,14 @@ public class FeedService {
 	@Transactional(readOnly = true)
 	public CursorPage<PostResponse> forYou(String cursor, int limit) {
 		User viewer = currentUserService.require();
-		return CursorPaging.page(
+		return CursorPaging.pageOfMany(
 				cursor,
 				limit,
 				window -> posts.findGlobalFeed(viewer.getId(), window),
 				(position, window) -> posts.findGlobalFeedBefore(
 						viewer.getId(), position.createdAt(), position.id(), window),
 				FeedService::positionOf,
-				PostResponse::from);
+				page -> assembler.toResponses(page, viewer));
 	}
 
 	private static Cursor positionOf(Post post) {
