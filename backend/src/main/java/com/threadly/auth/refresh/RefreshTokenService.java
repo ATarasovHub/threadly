@@ -13,7 +13,6 @@ import java.util.HexFormat;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,21 +45,21 @@ public class RefreshTokenService {
 	/**
 	 * Validates the presented token and replaces it with a successor.
 	 *
-	 * @throws BadCredentialsException if the token is unknown, expired, or already rotated away
+	 * @throws InvalidRefreshTokenException if the token is unknown, expired, or already rotated away
 	 */
 	@Transactional
 	public IssuedRefreshToken rotate(String presentedToken) {
 		Instant now = Instant.now();
 		RefreshToken stored = tokens.findByTokenHash(hash(presentedToken))
-				.orElseThrow(() -> new BadCredentialsException("Unknown refresh token"));
+				.orElseThrow(() -> new InvalidRefreshTokenException("Unknown refresh token"));
 
 		if (stored.isRevoked()) {
 			log.warn("Refresh token reuse detected for family {}; revoking the whole family", stored.getFamilyId());
 			familyRevoker.revoke(stored.getFamilyId(), now);
-			throw new BadCredentialsException("Refresh token was already used");
+			throw new InvalidRefreshTokenException("Refresh token was already used");
 		}
 		if (stored.isExpired(now)) {
-			throw new BadCredentialsException("Refresh token expired");
+			throw new InvalidRefreshTokenException("Refresh token expired");
 		}
 
 		stored.revoke(now);

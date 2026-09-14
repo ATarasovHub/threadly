@@ -3,6 +3,7 @@ package com.threadly.auth;
 import com.threadly.auth.dto.AuthenticationResponse;
 import com.threadly.auth.dto.LoginRequest;
 import com.threadly.auth.dto.RegisterRequest;
+import com.threadly.auth.refresh.InvalidRefreshTokenException;
 import com.threadly.auth.refresh.RefreshCookieFactory;
 import com.threadly.user.dto.UserResponse;
 import jakarta.validation.Valid;
@@ -10,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,7 +41,7 @@ public class AuthController {
 	public ResponseEntity<AuthenticationResponse> refresh(
 			@CookieValue(name = RefreshCookieFactory.COOKIE_NAME, required = false) String refreshToken) {
 		if (refreshToken == null || refreshToken.isBlank()) {
-			throw new BadCredentialsException("Missing refresh token");
+			throw new InvalidRefreshTokenException("Missing refresh token");
 		}
 		return withRefreshCookie(authService.refresh(refreshToken));
 	}

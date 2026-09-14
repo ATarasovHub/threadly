@@ -139,14 +139,16 @@ class RefreshTokenIT {
 	void rejectsRefreshWithoutACookie() throws Exception {
 		mockMvc.perform(post("/api/v1/auth/refresh"))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.title").value("Invalid credentials"));
+				.andExpect(jsonPath("$.title").value("Session expired"));
 	}
 
 	@Test
 	void rejectsUnknownRefreshToken() throws Exception {
 		mockMvc.perform(post("/api/v1/auth/refresh")
 						.cookie(new Cookie(RefreshCookieFactory.COOKIE_NAME, "made-up-token")))
-				.andExpect(status().isUnauthorized());
+				.andExpect(status().isUnauthorized())
+				// A failed refresh must not read as a rejected password.
+				.andExpect(jsonPath("$.type").value("https://threadly.dev/problems/invalid-refresh-token"));
 	}
 
 	@Test

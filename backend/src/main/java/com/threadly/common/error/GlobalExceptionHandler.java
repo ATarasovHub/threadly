@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import com.threadly.auth.refresh.InvalidRefreshTokenException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -44,6 +45,19 @@ public class GlobalExceptionHandler {
 		problem.setType(URI.create("https://threadly.dev/problems/invalid-credentials"));
 		problem.setTitle("Invalid credentials");
 		problem.setDetail("The identifier or password is incorrect.");
+		return problem;
+	}
+
+	/**
+	 * Narrower than the handler above: a rejected refresh is about the session, not the password,
+	 * and the client's correct reaction is to send the user back to the login screen.
+	 */
+	@ExceptionHandler(InvalidRefreshTokenException.class)
+	ProblemDetail onInvalidRefreshToken(InvalidRefreshTokenException exception) {
+		ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+		problem.setType(URI.create("https://threadly.dev/problems/invalid-refresh-token"));
+		problem.setTitle("Session expired");
+		problem.setDetail("This session is no longer valid. Sign in again.");
 		return problem;
 	}
 
