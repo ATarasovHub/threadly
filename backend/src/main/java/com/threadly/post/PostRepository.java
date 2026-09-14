@@ -1,6 +1,7 @@
 package com.threadly.post;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Limit;
@@ -13,7 +14,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	@Query("select p from Post p join fetch p.author where p.id = :id and p.deletedAt is null")
 	Optional<Post> findVisibleById(@Param("id") Long id);
 
-	@Query("select count(p) from Post p where p.author.id = :authorId and p.deletedAt is null")
+	@Query("""
+			select count(p) from Post p
+			where p.author.id = :authorId and p.deletedAt is null and p.parent is null
+			""")
 	long countVisibleByAuthorId(@Param("authorId") Long authorId);
 
 	/**
@@ -27,6 +31,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 			select p from Post p
 			join fetch p.author a
 			where p.deletedAt is null
+			  and p.parent is null
 			  and (a.id = :viewerId
 			       or exists (select 1 from Follow f
 			                  where f.follower.id = :viewerId and f.followee.id = a.id))
@@ -38,6 +43,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 			select p from Post p
 			join fetch p.author a
 			where p.deletedAt is null
+			  and p.parent is null
 			  and (a.id = :viewerId
 			       or exists (select 1 from Follow f
 			                  where f.follower.id = :viewerId and f.followee.id = a.id))
@@ -58,6 +64,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 			select p from Post p
 			join fetch p.author a
 			where p.deletedAt is null
+			  and p.parent is null
 			  and not exists (select 1 from Block b
 			                  where (b.blocker.id = :viewerId and b.blocked.id = a.id)
 			                     or (b.blocker.id = a.id and b.blocked.id = :viewerId))
@@ -69,6 +76,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 			select p from Post p
 			join fetch p.author a
 			where p.deletedAt is null
+			  and p.parent is null
 			  and not exists (select 1 from Block b
 			                  where (b.blocker.id = :viewerId and b.blocked.id = a.id)
 			                     or (b.blocker.id = a.id and b.blocked.id = :viewerId))
@@ -81,12 +89,48 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 			@Param("id") Long id,
 			Limit limit);
 
+	/**
+	 * Replies to a post, oldest first.
+	 *
+	 * <p>The only listing in the API that runs forwards in time: a conversation is read from the
+	 * beginning, not from its latest message. The cursor comparison is flipped to match.
+	 */
+	@Query("""
+			select p from Post p
+			join fetch p.author
+			where p.parent.id = :parentId and p.deletedAt is null
+			order by p.createdAt asc, p.id asc
+			""")
+	List<Post> findReplies(@Param("parentId") Long parentId, Limit limit);
+
+	@Query("""
+			select p from Post p
+			join fetch p.author
+			where p.parent.id = :parentId and p.deletedAt is null
+			  and (p.createdAt > :createdAt or (p.createdAt = :createdAt and p.id > :id))
+			order by p.createdAt asc, p.id asc
+			""")
+	List<Post> findRepliesAfter(
+			@Param("parentId") Long parentId,
+			@Param("createdAt") Instant createdAt,
+			@Param("id") Long id,
+			Limit limit);
+
+	/** Reply counts for a whole page of posts, in one query. */
+	@Query("""
+			select p.parent.id, count(p) from Post p
+			where p.parent.id in :parentIds and p.deletedAt is null
+			group by p.parent.id
+			""")
+	List<Object[]> countRepliesByParentIds(@Param("parentIds") Collection<Long> parentIds);
+
 	/** First page of an author's timeline, newest first. */
 	@Query("""
 			select p from Post p
 			join fetch p.author a
 			where a.id = :authorId
 			  and p.deletedAt is null
+			  and p.parent is null
 			order by p.createdAt desc, p.id desc
 			""")
 	List<Post> findAuthorTimeline(@Param("authorId") Long authorId, Limit limit);
@@ -106,6 +150,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 			join fetch p.author a
 			where a.id = :authorId
 			  and p.deletedAt is null
+			  and p.parent is null
 			  and (p.createdAt < :createdAt or (p.createdAt = :createdAt and p.id < :id))
 			order by p.createdAt desc, p.id desc
 			""")

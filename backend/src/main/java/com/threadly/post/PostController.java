@@ -37,6 +37,21 @@ public class PostController {
 		return postService.create(request);
 	}
 
+	@PostMapping("/posts/{id}/replies")
+	@ResponseStatus(HttpStatus.CREATED)
+	public PostResponse reply(@PathVariable Long id, @Valid @RequestBody CreatePostRequest request) {
+		return postService.reply(id, request);
+	}
+
+	/** Replies are returned oldest first, so a thread reads top to bottom. */
+	@GetMapping("/posts/{id}/replies")
+	public CursorPage<PostResponse> replies(
+			@PathVariable Long id,
+			@RequestParam(required = false) String cursor,
+			@RequestParam(defaultValue = "" + DEFAULT_PAGE_SIZE) @Min(1) @Max(100) int limit) {
+		return postService.repliesTo(id, cursor, limit);
+	}
+
 	@GetMapping("/posts/{id}")
 	public PostResponse findById(@PathVariable Long id) {
 		return postService.findById(id);

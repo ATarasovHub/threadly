@@ -41,6 +41,11 @@ public class Post extends Auditable {
 	@Column(nullable = false, length = MAX_LENGTH)
 	private String content;
 
+	/** The post being replied to, or {@code null} for a root post. */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "parent_id")
+	private Post parent;
+
 	@Column(name = "deleted_at")
 	private Instant deletedAt;
 
@@ -48,13 +53,22 @@ public class Post extends Auditable {
 	@Column(name = "edited_at")
 	private Instant editedAt;
 
-	private Post(User author, String content) {
+	private Post(User author, String content, Post parent) {
 		this.author = author;
 		this.content = content;
+		this.parent = parent;
 	}
 
 	public static Post write(User author, String content) {
-		return new Post(author, content.strip());
+		return new Post(author, content.strip(), null);
+	}
+
+	public static Post replyTo(Post parent, User author, String content) {
+		return new Post(author, content.strip(), parent);
+	}
+
+	public boolean isReply() {
+		return parent != null;
 	}
 
 	public void edit(String content) {

@@ -18,9 +18,13 @@ public record PostResponse(
 		boolean edited,
 		Instant createdAt,
 		Metrics metrics,
-		ViewerState viewer) {
+		ViewerState viewer,
+		ParentRef inReplyTo) {
 
 	public static PostResponse of(Post post, Metrics metrics, ViewerState viewer) {
+		ParentRef inReplyTo = post.isReply()
+				? new ParentRef(post.getParent().getId(), post.getParent().getAuthor().getUsername())
+				: null;
 		return new PostResponse(
 				post.getId(),
 				post.getContent(),
@@ -28,7 +32,8 @@ public record PostResponse(
 				post.getEditedAt() != null,
 				post.getCreatedAt(),
 				metrics,
-				viewer);
+				viewer,
+				inReplyTo);
 	}
 
 	public record PostAuthor(Long id, String username, String displayName, String avatarUrl) {
@@ -40,7 +45,11 @@ public record PostResponse(
 		}
 	}
 
-	public record Metrics(long likes) {
+	public record Metrics(long likes, long replies) {
+	}
+
+	/** Enough of the parent for a client to render "Replying to @andrii" and link to it. */
+	public record ParentRef(Long id, String authorUsername) {
 	}
 
 	public record ViewerState(boolean liked) {

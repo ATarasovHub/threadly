@@ -33,6 +33,38 @@ public class PostService {
 		return assembler.toResponse(post, me);
 	}
 
+	/** Publishes a reply to an existing post. */
+	@Transactional
+	public PostResponse reply(Long parentId, CreatePostRequest request) {
+		User me = currentUserService.require();
+		Post parent = requireVisible(parentId);
+		requireNotBlocked(parent.getAuthor().getId(), "No post with id " + parentId);
+
+		Post reply = posts.save(Post.replyTo(parent, me, request.content()));
+		return assembler.toResponse(reply, me);
+	}
+
+	/**
+	 * A thread: the replies to one post.
+	 *
+	 * <p>Oldest first, unlike every other listing — a conversation is read from its start.
+	 */
+	@Transactional(readOnly = true)
+	public CursorPage<PostResponse> repliesTo(Long parentId, String encodedCursor, int limit) {
+		User viewer = currentUserService.require();
+		Post parent = requireVisible(parentId);
+		requireNotBlocked(parent.getAuthor().getId(), "No post with id " + parentId);
+
+		return CursorPaging.pageOfMany(
+				encodedCursor,
+				limit,
+				window -> posts.findReplies(parentId, window),
+				(position, window) -> posts.findRepliesAfter(
+						parentId, position.createdAt(), position.id(), window),
+				post -> new Cursor(post.getCreatedAt(), post.getId()),
+				page -> assembler.toResponses(page, viewer));
+	}
+
 	@Transactional(readOnly = true)
 	public PostResponse findById(Long id) {
 		Post post = requireVisible(id);

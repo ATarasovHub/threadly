@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 public class PostAssembler {
 
 	private final PostLikeRepository likes;
+	private final PostRepository postRepository;
 
 	public PostResponse toResponse(Post post, User viewer) {
 		return toResponses(List.of(post), viewer).getFirst();
@@ -40,10 +41,17 @@ public class PostAssembler {
 		}
 		Set<Long> likedByViewer = Set.copyOf(likes.findLikedPostIds(viewer.getId(), ids));
 
+		Map<Long, Long> replyCounts = new HashMap<>();
+		for (Object[] row : postRepository.countRepliesByParentIds(ids)) {
+			replyCounts.put((Long) row[0], (Long) row[1]);
+		}
+
 		return posts.stream()
 				.map(post -> PostResponse.of(
 						post,
-						new PostResponse.Metrics(likeCounts.getOrDefault(post.getId(), 0L)),
+						new PostResponse.Metrics(
+								likeCounts.getOrDefault(post.getId(), 0L),
+								replyCounts.getOrDefault(post.getId(), 0L)),
 						new PostResponse.ViewerState(likedByViewer.contains(post.getId()))))
 				.toList();
 	}
