@@ -1,6 +1,7 @@
 package com.threadly.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.threadly.common.ratelimit.RateLimitProperties;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -16,7 +17,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
  * enough; an asymmetric key pair would only be needed if a separate service had to verify them.
  */
 @Configuration
-@EnableConfigurationProperties({JwtProperties.class, AuthProperties.class})
+@EnableConfigurationProperties({JwtProperties.class, AuthProperties.class, RateLimitProperties.class})
 public class JwtConfig {
 
 	private static final String HMAC_ALGORITHM = "HmacSHA256";

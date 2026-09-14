@@ -25,7 +25,9 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
  * it. The Spring context is cached across subclasses because the annotations here are identical,
  * so the container starts once for the whole suite.
  */
-@SpringBootTest
+// Rate limiting is exercised by its own test. Leaving it on here would make unrelated tests
+// share one address-keyed quota and fail in bursts.
+@SpringBootTest(properties = "threadly.rate-limit.enabled=false")
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 public abstract class ApiIntegrationTest {

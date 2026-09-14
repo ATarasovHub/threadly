@@ -34,6 +34,20 @@ threadly:
     cookie-secure: ${AUTH_COOKIE_SECURE:false}
     cookie-path: /api/v1/auth
 
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    # Per client, per period. Writes get the tighter quota.
+    capacity: ${RATE_LIMIT_CAPACITY:300}
+    write-capacity: ${RATE_LIMIT_WRITE_CAPACITY:60}
+    period: ${RATE_LIMIT_PERIOD:1m}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    # Endpoints grouped by tag read better than one alphabetical wall.
+    tags-sorter: alpha
+    operations-sorter: method
+
 server:
   port: ${SERVER_PORT:8080}
 
