@@ -1,0 +1,31 @@
+# Build output
+build/
+out/
+target/
+dist/
+
+# Gradle
+.gradle/
+
+# Node
+node_modules/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / local env
+.env
+.env.local
+*.local.yml
+
+# Logs
+*.log
