@@ -20,21 +20,31 @@ threadly/
 └── frontend/   React + TypeScript client (added in a later step)
 ```
 
-## Running the backend
+## Running locally
 
-The Gradle wrapper provisions the Java 21 toolchain automatically.
+Start the infrastructure (PostgreSQL 17):
+
+```bash
+docker compose up -d
+```
+
+Then run the backend — the Gradle wrapper provisions the Java 21 toolchain automatically:
 
 ```bash
 cd backend
 ./gradlew bootRun
 ```
 
-The application expects a PostgreSQL instance; see `docker-compose.yml` (added in the next step).
+The API is served on http://localhost:8080 and the health probe on
+http://localhost:8080/actuator/health.
+
+Configuration is read from environment variables with local defaults; copy
+`.env.example` to `.env` to override them.
 
 ## Roadmap
 
 - [x] Project skeleton
-- [ ] Docker Compose infrastructure
+- [x] Docker Compose infrastructure
 - [ ] Authentication (registration, JWT, roles)
 - [ ] Profiles
 - [ ] Posts, replies, reposts
