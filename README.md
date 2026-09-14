@@ -41,11 +41,25 @@ http://localhost:8080/actuator/health.
 Configuration is read from environment variables with local defaults; copy
 `.env.example` to `.env` to override them.
 
+## API so far
+
+| Method | Path                     | Auth   | Purpose                                   |
+|--------|--------------------------|--------|-------------------------------------------|
+| POST   | `/api/v1/auth/register`  | —      | Create an account                         |
+| POST   | `/api/v1/auth/login`     | —      | Exchange credentials for an access token  |
+| POST   | `/api/v1/auth/refresh`   | cookie | Rotate the refresh token, get a new access token |
+| POST   | `/api/v1/auth/logout`    | cookie | Revoke the session                        |
+| GET    | `/api/v1/me`             | bearer | The authenticated account                 |
+
+Access tokens are short-lived JWTs sent as `Authorization: Bearer`. The refresh token lives
+only in an HttpOnly, SameSite=Strict cookie, is stored server-side as a SHA-256 hash, and is
+rotated on every use; replaying a rotated token revokes the whole session family.
+
 ## Roadmap
 
 - [x] Project skeleton
 - [x] Docker Compose infrastructure
-- [ ] Authentication (registration, JWT, roles)
+- [x] Authentication (registration, JWT, refresh tokens, roles)
 - [ ] Profiles
 - [ ] Posts, replies, reposts
 - [ ] Follow graph
