@@ -56,20 +56,27 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	 */
 	@Query("""
 			select p from Post p
-			join fetch p.author
+			join fetch p.author a
 			where p.deletedAt is null
+			  and not exists (select 1 from Block b
+			                  where (b.blocker.id = :viewerId and b.blocked.id = a.id)
+			                     or (b.blocker.id = a.id and b.blocked.id = :viewerId))
 			order by p.createdAt desc, p.id desc
 			""")
-	List<Post> findGlobalFeed(Limit limit);
+	List<Post> findGlobalFeed(@Param("viewerId") Long viewerId, Limit limit);
 
 	@Query("""
 			select p from Post p
-			join fetch p.author
+			join fetch p.author a
 			where p.deletedAt is null
+			  and not exists (select 1 from Block b
+			                  where (b.blocker.id = :viewerId and b.blocked.id = a.id)
+			                     or (b.blocker.id = a.id and b.blocked.id = :viewerId))
 			  and (p.createdAt < :createdAt or (p.createdAt = :createdAt and p.id < :id))
 			order by p.createdAt desc, p.id desc
 			""")
 	List<Post> findGlobalFeedBefore(
+			@Param("viewerId") Long viewerId,
 			@Param("createdAt") Instant createdAt,
 			@Param("id") Long id,
 			Limit limit);

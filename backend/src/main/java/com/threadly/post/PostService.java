@@ -1,5 +1,6 @@
 package com.threadly.post;
 
+import com.threadly.block.BlockService;
 import com.threadly.common.error.ResourceNotFoundException;
 import com.threadly.common.page.Cursor;
 import com.threadly.common.page.CursorPage;
@@ -22,6 +23,7 @@ public class PostService {
 	private final PostRepository posts;
 	private final UserRepository users;
 	private final CurrentUserService currentUserService;
+	private final BlockService blockService;
 
 	@Transactional
 	public PostResponse create(CreatePostRequest request) {
@@ -31,7 +33,9 @@ public class PostService {
 
 	@Transactional(readOnly = true)
 	public PostResponse findById(Long id) {
-		return PostResponse.from(requireVisible(id));
+		Post post = requireVisible(id);
+		requireNotBlocked(post.getAuthor().getId(), "No post with id " + id);
+		return PostResponse.from(post);
 	}
 
 	@Transactional
@@ -53,6 +57,8 @@ public class PostService {
 				.filter(User::isEnabled)
 				.orElseThrow(() -> new ResourceNotFoundException("No account with handle @" + username));
 
+		requireNotBlocked(author.getId(), "No account with handle @" + username);
+
 		return CursorPaging.page(
 				encodedCursor,
 				limit,
@@ -61,6 +67,12 @@ public class PostService {
 						author.getId(), position.createdAt(), position.id(), window),
 				post -> new Cursor(post.getCreatedAt(), post.getId()),
 				PostResponse::from);
+	}
+
+	private void requireNotBlocked(Long otherAccountId, String message) {
+		if (blockService.isBlockedBetween(currentUserService.require().getId(), otherAccountId)) {
+			throw new ResourceNotFoundException(message);
+		}
 	}
 
 	private Post requireVisible(Long id) {

@@ -1,5 +1,6 @@
 package com.threadly.follow;
 
+import com.threadly.block.BlockService;
 import com.threadly.common.error.BadRequestException;
 import com.threadly.common.error.ResourceNotFoundException;
 import com.threadly.common.page.Cursor;
@@ -21,6 +22,7 @@ public class FollowService {
 	private final FollowRepository follows;
 	private final UserRepository users;
 	private final CurrentUserService currentUserService;
+	private final BlockService blockService;
 
 	/**
 	 * Follows an account.
@@ -35,6 +37,9 @@ public class FollowService {
 
 		if (target.getId().equals(me.getId())) {
 			throw new BadRequestException("You cannot follow yourself.");
+		}
+		if (blockService.isBlockedBetween(me.getId(), target.getId())) {
+			throw new ResourceNotFoundException("No account with handle @" + username);
 		}
 		if (follows.existsByFollowerIdAndFolloweeId(me.getId(), target.getId())) {
 			return;

@@ -1,5 +1,6 @@
 package com.threadly.profile;
 
+import com.threadly.block.BlockService;
 import com.threadly.common.error.ResourceNotFoundException;
 import com.threadly.follow.FollowRepository;
 import com.threadly.post.PostRepository;
@@ -19,6 +20,7 @@ public class ProfileService {
 	private final CurrentUserService currentUserService;
 	private final UserRepository users;
 	private final FollowRepository follows;
+	private final BlockService blockService;
 	private final PostRepository posts;
 
 	/**
@@ -30,7 +32,13 @@ public class ProfileService {
 		User user = users.findByUsernameIgnoreCase(username)
 				.filter(User::isEnabled)
 				.orElseThrow(() -> new ResourceNotFoundException("No account with handle @" + username));
-		return describe(user, currentUserService.require());
+		User viewer = currentUserService.require();
+		// A blocked account is reported as missing rather than forbidden: acknowledging it exists
+		// would tell each side exactly who blocked whom.
+		if (blockService.isBlockedBetween(viewer.getId(), user.getId())) {
+			throw new ResourceNotFoundException("No account with handle @" + username);
+		}
+		return describe(user, viewer);
 	}
 
 	@Transactional

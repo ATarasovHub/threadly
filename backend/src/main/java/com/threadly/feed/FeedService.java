@@ -41,13 +41,13 @@ public class FeedService {
 	 */
 	@Transactional(readOnly = true)
 	public CursorPage<PostResponse> forYou(String cursor, int limit) {
-		currentUserService.require();
+		User viewer = currentUserService.require();
 		return CursorPaging.page(
 				cursor,
 				limit,
-				posts::findGlobalFeed,
+				window -> posts.findGlobalFeed(viewer.getId(), window),
 				(position, window) -> posts.findGlobalFeedBefore(
-						position.createdAt(), position.id(), window),
+						viewer.getId(), position.createdAt(), position.id(), window),
 				FeedService::positionOf,
 				PostResponse::from);
 	}
