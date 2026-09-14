@@ -6,55 +6,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.threadly.TestcontainersConfiguration;
 import com.threadly.auth.refresh.RefreshCookieFactory;
-import com.threadly.auth.refresh.RefreshTokenRepository;
-import com.threadly.user.Role;
-import com.threadly.user.User;
-import com.threadly.user.UserRepository;
+import com.threadly.support.ApiIntegrationTest;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
-class RefreshTokenIT {
-
-	private static final String PASSWORD = "sup3rsecret";
-
-	@Autowired
-	private MockMvc mockMvc;
-
-	@Autowired
-	private UserRepository users;
-
-	@Autowired
-	private RefreshTokenRepository refreshTokens;
-
-	@Autowired
-	private PasswordEncoder passwordEncoder;
+class RefreshTokenIT extends ApiIntegrationTest {
 
 	@BeforeEach
 	void createAccount() {
-		refreshTokens.deleteAll();
-		users.deleteAll();
-		users.save(User.builder()
-				.username("andrii")
-				.email("andrii@example.com")
-				.passwordHash(passwordEncoder.encode(PASSWORD))
-				.displayName("Andrii")
-				.role(Role.USER)
-				.enabled(true)
-				.build());
+		givenAccount("andrii");
 	}
 
 	private Cookie login() throws Exception {

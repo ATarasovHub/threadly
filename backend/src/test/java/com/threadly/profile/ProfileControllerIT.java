@@ -6,67 +6,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.threadly.TestcontainersConfiguration;
-import com.threadly.auth.refresh.RefreshTokenRepository;
-import com.threadly.user.Role;
+import com.threadly.support.ApiIntegrationTest;
 import com.threadly.user.User;
-import com.threadly.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
-class ProfileControllerIT {
-
-	private static final String PASSWORD = "sup3rsecret";
-
-	@Autowired
-	private MockMvc mockMvc;
-
-	@Autowired
-	private UserRepository users;
-
-	@Autowired
-	private RefreshTokenRepository refreshTokens;
-
-	@Autowired
-	private PasswordEncoder passwordEncoder;
+class ProfileControllerIT extends ApiIntegrationTest {
 
 	private String token;
 
 	@BeforeEach
 	void createAccountAndSignIn() throws Exception {
-		refreshTokens.deleteAll();
-		users.deleteAll();
-		users.save(User.builder()
-				.username("andrii")
-				.email("andrii@example.com")
-				.passwordHash(passwordEncoder.encode(PASSWORD))
-				.displayName("Andrii")
-				.role(Role.USER)
-				.enabled(true)
-				.build());
-
-		String response = mockMvc.perform(post("/api/v1/auth/login")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"identifier":"andrii","password":"%s"}
-								""".formatted(PASSWORD)))
-				.andExpect(status().isOk())
-				.andReturn()
-				.getResponse()
-				.getContentAsString();
-		token = response.replaceAll(".*\"accessToken\"\s*:\s*\"([^\"]+)\".*", "$1");
+		givenAccount("andrii");
+		token = accessTokenFor("andrii");
 	}
 
 	private MockHttpServletRequestBuilder patchProfile(String body) {
@@ -165,14 +120,7 @@ class ProfileControllerIT {
 
 	@Test
 	void servesAnotherAccountsProfileByHandle() throws Exception {
-		users.save(User.builder()
-				.username("Anna")
-				.email("anna@example.com")
-				.passwordHash(passwordEncoder.encode(PASSWORD))
-				.displayName("Anna")
-				.role(Role.USER)
-				.enabled(true)
-				.build());
+		givenAccount("Anna");
 
 		// The handle in the URL is matched case-insensitively, so /anna and /Anna are one page.
 		mockMvc.perform(get("/api/v1/users/anna").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
@@ -207,14 +155,7 @@ class ProfileControllerIT {
 
 	@Test
 	void hidesDisabledAccounts() throws Exception {
-		User disabled = users.save(User.builder()
-				.username("banned")
-				.email("banned@example.com")
-				.passwordHash(passwordEncoder.encode(PASSWORD))
-				.displayName("Banned")
-				.role(Role.USER)
-				.enabled(false)
-				.build());
+		User disabled = givenAccount("banned", false);
 
 		mockMvc.perform(get("/api/v1/users/" + disabled.getUsername())
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token))

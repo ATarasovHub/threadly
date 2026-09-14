@@ -5,38 +5,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.threadly.TestcontainersConfiguration;
+import com.threadly.support.ApiIntegrationTest;
 import com.threadly.user.User;
-import com.threadly.user.UserRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
-class AuthControllerIT {
-
-	@Autowired
-	private MockMvc mockMvc;
-
-	@Autowired
-	private UserRepository users;
-
-	@Autowired
-	private PasswordEncoder passwordEncoder;
-
-	@BeforeEach
-	void clearAccounts() {
-		users.deleteAll();
-	}
+class AuthControllerIT extends ApiIntegrationTest {
 
 	private static String body(String username, String email, String password, String displayName) {
 		return """
