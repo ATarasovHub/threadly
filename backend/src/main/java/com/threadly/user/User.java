@@ -53,6 +53,22 @@ public class User extends Auditable {
 	@Column(nullable = false, length = 20)
 	private Role role;
 
+	@Column(length = 160)
+	private String bio;
+
+	@Column(length = 50)
+	private String location;
+
+	/** Absolute http(s) URL; the scheme is enforced by a CHECK constraint in migration V3. */
+	@Column(length = 200)
+	private String website;
+
+	@Column(name = "avatar_url", length = 500)
+	private String avatarUrl;
+
+	@Column(name = "banner_url", length = 500)
+	private String bannerUrl;
+
 	/** Disabled accounts keep their data but cannot authenticate. */
 	@Column(nullable = false)
 	@Setter
@@ -66,5 +82,29 @@ public class User extends Auditable {
 		this.displayName = displayName;
 		this.role = role == null ? Role.USER : role;
 		this.enabled = enabled;
+	}
+
+	/**
+	 * Applies a profile edit. A {@code null} argument leaves the field untouched; a blank one
+	 * clears it, which is how the API expresses "remove my bio".
+	 */
+	public void updateProfile(String displayName, String bio, String location, String website,
+			String avatarUrl, String bannerUrl) {
+		if (displayName != null) {
+			this.displayName = displayName.trim();
+		}
+		this.bio = replaceIfPresent(this.bio, bio);
+		this.location = replaceIfPresent(this.location, location);
+		this.website = replaceIfPresent(this.website, website);
+		this.avatarUrl = replaceIfPresent(this.avatarUrl, avatarUrl);
+		this.bannerUrl = replaceIfPresent(this.bannerUrl, bannerUrl);
+	}
+
+	private static String replaceIfPresent(String current, String incoming) {
+		if (incoming == null) {
+			return current;
+		}
+		String trimmed = incoming.trim();
+		return trimmed.isEmpty() ? null : trimmed;
 	}
 }
