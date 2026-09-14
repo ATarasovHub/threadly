@@ -41,6 +41,11 @@ threadly:
     write-capacity: ${RATE_LIMIT_WRITE_CAPACITY:60}
     period: ${RATE_LIMIT_PERIOD:1m}
 
+  cors:
+    # The Vite dev server. Production adds its real origin here; wildcards are not an option
+    # because the refresh cookie travels with credentials.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

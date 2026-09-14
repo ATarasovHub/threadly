@@ -50,3 +50,13 @@ dependencies {
 tasks.withType<Test> {
 	useJUnitPlatform()
 }
+
+tasks.bootJar {
+	// A stable name the Dockerfile can refer to without a version in it.
+	archiveFileName = "threadly-backend.jar"
+}
+
+// Only the executable jar is ever published; the plain one is dead weight.
+tasks.jar {
+	enabled = false
+}

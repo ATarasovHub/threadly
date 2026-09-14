@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -24,6 +25,7 @@ public class SecurityConfig {
 
 	private final ProblemDetailEntryPoint problemDetailEntryPoint;
 	private final JwtAuthorityConverter jwtAuthorityConverter;
+	private final CorsConfigurationSource corsConfigurationSource;
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
@@ -45,6 +47,7 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http
+				.cors(cors -> cors.configurationSource(corsConfigurationSource))
 				// The API is token-based and stateless, so there is no session cookie to protect.
 				.csrf(csrf -> csrf.disable())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
