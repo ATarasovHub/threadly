@@ -16,7 +16,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
  * enough; an asymmetric key pair would only be needed if a separate service had to verify them.
  */
 @Configuration
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, AuthProperties.class})
 public class JwtConfig {
 
 	private static final String HMAC_ALGORITHM = "HmacSHA256";

@@ -4,6 +4,7 @@ import com.threadly.auth.dto.AuthenticationResponse;
 import com.threadly.auth.dto.LoginRequest;
 import com.threadly.auth.dto.RegisterRequest;
 import com.threadly.auth.jwt.AccessTokenService;
+import com.threadly.auth.refresh.RefreshTokenService;
 import com.threadly.common.error.DuplicateResourceException;
 import com.threadly.user.Role;
 import com.threadly.user.User;
@@ -25,6 +26,7 @@ public class AuthService {
 	private final PasswordEncoder passwordEncoder;
 	private final AuthenticationManager authenticationManager;
 	private final AccessTokenService accessTokenService;
+	private final RefreshTokenService refreshTokenService;
 
 	/**
 	 * Creates an account. The pre-checks give callers a precise error; the unique indexes from
@@ -57,15 +59,40 @@ public class AuthService {
 	 * <p>Delegating to the {@link AuthenticationManager} keeps bad credentials, disabled and
 	 * unknown accounts indistinguishable to the caller, which is what stops handle enumeration.
 	 */
-	@Transactional(readOnly = true)
-	public AuthenticationResponse login(LoginRequest request) {
+	@Transactional
+	public AuthenticatedSession login(LoginRequest request) {
 		var authentication = authenticationManager.authenticate(
 				new UsernamePasswordAuthenticationToken(request.identifier(), request.password()));
 
 		String username = ((UserDetails) authentication.getPrincipal()).getUsername();
 		User user = users.findByUsernameIgnoreCase(username).orElseThrow();
 
+		return session(user, refreshTokenService.issue(user).value());
+	}
+
+	/** Exchanges a refresh token for a fresh pair; the presented token is consumed. */
+	@Transactional
+	public AuthenticatedSession refresh(String refreshToken) {
+		RefreshTokenService.IssuedRefreshToken rotated = refreshTokenService.rotate(refreshToken);
+		return session(rotated.user(), rotated.value());
+	}
+
+	@Transactional
+	public void logout(String refreshToken) {
+		refreshTokenService.revoke(refreshToken);
+	}
+
+	private AuthenticatedSession session(User user, String refreshToken) {
 		AccessTokenService.IssuedToken token = accessTokenService.issue(user);
-		return AuthenticationResponse.bearer(token.value(), token.expiresInSeconds(), UserResponse.from(user));
+		AuthenticationResponse body =
+				AuthenticationResponse.bearer(token.value(), token.expiresInSeconds(), UserResponse.from(user));
+		return new AuthenticatedSession(body, refreshToken);
+	}
+
+	/**
+	 * @param refreshToken travels in an HttpOnly cookie rather than the response body, so it is
+	 *                     kept apart from the JSON the controller returns
+	 */
+	public record AuthenticatedSession(AuthenticationResponse body, String refreshToken) {
 	}
 }

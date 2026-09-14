@@ -3,10 +3,15 @@ package com.threadly.auth;
 import com.threadly.auth.dto.AuthenticationResponse;
 import com.threadly.auth.dto.LoginRequest;
 import com.threadly.auth.dto.RegisterRequest;
+import com.threadly.auth.refresh.RefreshCookieFactory;
 import com.threadly.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
 	private final AuthService authService;
+	private final RefreshCookieFactory refreshCookieFactory;
 
 	@PostMapping("/register")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -27,7 +33,35 @@ public class AuthController {
 	}
 
 	@PostMapping("/login")
-	public AuthenticationResponse login(@Valid @RequestBody LoginRequest request) {
-		return authService.login(request);
+	public ResponseEntity<AuthenticationResponse> login(@Valid @RequestBody LoginRequest request) {
+		return withRefreshCookie(authService.login(request));
+	}
+
+	@PostMapping("/refresh")
+	public ResponseEntity<AuthenticationResponse> refresh(
+			@CookieValue(name = RefreshCookieFactory.COOKIE_NAME, required = false) String refreshToken) {
+		if (refreshToken == null || refreshToken.isBlank()) {
+			throw new BadCredentialsException("Missing refresh token");
+		}
+		return withRefreshCookie(authService.refresh(refreshToken));
+	}
+
+	@PostMapping("/logout")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public ResponseEntity<Void> logout(
+			@CookieValue(name = RefreshCookieFactory.COOKIE_NAME, required = false) String refreshToken) {
+		if (refreshToken != null && !refreshToken.isBlank()) {
+			authService.logout(refreshToken);
+		}
+		// Clear the cookie even when no session was found, so a stale copy cannot linger.
+		return ResponseEntity.noContent()
+				.header(HttpHeaders.SET_COOKIE, refreshCookieFactory.expired().toString())
+				.build();
+	}
+
+	private ResponseEntity<AuthenticationResponse> withRefreshCookie(AuthService.AuthenticatedSession session) {
+		return ResponseEntity.ok()
+				.header(HttpHeaders.SET_COOKIE, refreshCookieFactory.create(session.refreshToken()).toString())
+				.body(session.body());
 	}
 }
