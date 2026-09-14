@@ -1,5 +1,6 @@
 package com.threadly.post;
 
+import com.threadly.bookmark.BookmarkRepository;
 import com.threadly.like.PostLikeRepository;
 import com.threadly.post.dto.PostResponse;
 import com.threadly.user.User;
@@ -23,6 +24,7 @@ public class PostAssembler {
 
 	private final PostLikeRepository likes;
 	private final PostRepository postRepository;
+	private final BookmarkRepository bookmarks;
 
 	public PostResponse toResponse(Post post, User viewer) {
 		return toResponses(List.of(post), viewer).getFirst();
@@ -41,6 +43,8 @@ public class PostAssembler {
 		}
 		Set<Long> likedByViewer = Set.copyOf(likes.findLikedPostIds(viewer.getId(), ids));
 
+		Set<Long> savedByViewer = Set.copyOf(bookmarks.findBookmarkedPostIds(viewer.getId(), ids));
+
 		Map<Long, Long> replyCounts = new HashMap<>();
 		for (Object[] row : postRepository.countRepliesByParentIds(ids)) {
 			replyCounts.put((Long) row[0], (Long) row[1]);
@@ -52,7 +56,9 @@ public class PostAssembler {
 						new PostResponse.Metrics(
 								likeCounts.getOrDefault(post.getId(), 0L),
 								replyCounts.getOrDefault(post.getId(), 0L)),
-						new PostResponse.ViewerState(likedByViewer.contains(post.getId()))))
+						new PostResponse.ViewerState(
+								likedByViewer.contains(post.getId()),
+								savedByViewer.contains(post.getId()))))
 				.toList();
 	}
 }

@@ -52,6 +52,6 @@ public record PostResponse(
 	public record ParentRef(Long id, String authorUsername) {
 	}
 
-	public record ViewerState(boolean liked) {
+	public record ViewerState(boolean liked, boolean bookmarked) {
 	}
 }
