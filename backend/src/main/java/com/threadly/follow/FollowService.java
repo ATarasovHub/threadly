@@ -4,15 +4,13 @@ import com.threadly.common.error.BadRequestException;
 import com.threadly.common.error.ResourceNotFoundException;
 import com.threadly.common.page.Cursor;
 import com.threadly.common.page.CursorPage;
+import com.threadly.common.page.CursorPaging;
 import com.threadly.follow.dto.UserSummaryResponse;
 import com.threadly.user.CurrentUserService;
 import com.threadly.user.User;
 import com.threadly.user.UserRepository;
-import java.util.List;
-import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,51 +59,31 @@ public class FollowService {
 	@Transactional(readOnly = true)
 	public CursorPage<UserSummaryResponse> followersOf(String username, String encodedCursor, int limit) {
 		User target = requireAccount(username);
-		return page(
+		return CursorPaging.page(
 				encodedCursor,
 				limit,
 				window -> follows.findFollowers(target.getId(), window),
-				(cursor, window) -> follows.findFollowersBefore(
-						target.getId(), cursor.createdAt(), cursor.id(), window),
-				Follow::getFollower);
+				(position, window) -> follows.findFollowersBefore(
+						target.getId(), position.createdAt(), position.id(), window),
+				FollowService::positionOf,
+				edge -> UserSummaryResponse.from(edge.getFollower()));
 	}
 
 	@Transactional(readOnly = true)
 	public CursorPage<UserSummaryResponse> followingOf(String username, String encodedCursor, int limit) {
 		User target = requireAccount(username);
-		return page(
+		return CursorPaging.page(
 				encodedCursor,
 				limit,
 				window -> follows.findFollowing(target.getId(), window),
-				(cursor, window) -> follows.findFollowingBefore(
-						target.getId(), cursor.createdAt(), cursor.id(), window),
-				Follow::getFollowee);
+				(position, window) -> follows.findFollowingBefore(
+						target.getId(), position.createdAt(), position.id(), window),
+				FollowService::positionOf,
+				edge -> UserSummaryResponse.from(edge.getFollowee()));
 	}
 
-	/**
-	 * Shared cursor-paging shape for both directions of the graph: fetch one row beyond the page
-	 * so the presence of a next page is known without a second query.
-	 */
-	private CursorPage<UserSummaryResponse> page(
-			String encodedCursor,
-			int limit,
-			Function<Limit, List<Follow>> firstPage,
-			java.util.function.BiFunction<Cursor, Limit, List<Follow>> nextPage,
-			Function<Follow, User> side) {
-
-		Limit window = Limit.of(limit + 1);
-		List<Follow> rows = encodedCursor == null
-				? firstPage.apply(window)
-				: nextPage.apply(Cursor.decode(encodedCursor), window);
-
-		boolean hasMore = rows.size() > limit;
-		List<Follow> visible = hasMore ? rows.subList(0, limit) : rows;
-		String nextCursor = hasMore
-				? new Cursor(visible.getLast().getCreatedAt(), visible.getLast().getId()).encode()
-				: null;
-
-		return CursorPage.of(
-				visible.stream().map(side).map(UserSummaryResponse::from).toList(), nextCursor);
+	private static Cursor positionOf(Follow edge) {
+		return new Cursor(edge.getCreatedAt(), edge.getId());
 	}
 
 	private User requireAccount(String username) {
