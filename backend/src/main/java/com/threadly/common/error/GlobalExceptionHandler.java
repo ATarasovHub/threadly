@@ -3,9 +3,11 @@ package com.threadly.common.error;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import com.threadly.auth.refresh.InvalidRefreshTokenException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -58,6 +60,44 @@ public class GlobalExceptionHandler {
 		problem.setType(URI.create("https://threadly.dev/problems/invalid-refresh-token"));
 		problem.setTitle("Session expired");
 		problem.setDetail("This session is no longer valid. Sign in again.");
+		return problem;
+	}
+
+	/**
+	 * Raised by {@code @Validated} on request parameters, which does not go through the binding
+	 * result the handler above inspects.
+	 */
+	@ExceptionHandler(ConstraintViolationException.class)
+	ProblemDetail onParameterConstraintViolation(ConstraintViolationException exception) {
+		Map<String, String> errors = new LinkedHashMap<>();
+		exception.getConstraintViolations().forEach(violation -> {
+			String path = violation.getPropertyPath().toString();
+			errors.putIfAbsent(path.substring(path.lastIndexOf('.') + 1), violation.getMessage());
+		});
+
+		ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+		problem.setType(URI.create("https://threadly.dev/problems/validation-failed"));
+		problem.setTitle("Validation failed");
+		problem.setDetail("One or more request parameters are invalid.");
+		problem.setProperty("errors", errors);
+		return problem;
+	}
+
+	@ExceptionHandler(InvalidCursorException.class)
+	ProblemDetail onInvalidCursor(InvalidCursorException exception) {
+		ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+		problem.setType(URI.create("https://threadly.dev/problems/invalid-cursor"));
+		problem.setTitle("Invalid cursor");
+		problem.setDetail(exception.getMessage());
+		return problem;
+	}
+
+	@ExceptionHandler(AccessDeniedException.class)
+	ProblemDetail onAccessDenied(AccessDeniedException exception) {
+		ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
+		problem.setType(URI.create("https://threadly.dev/problems/forbidden"));
+		problem.setTitle("Forbidden");
+		problem.setDetail(exception.getMessage());
 		return problem;
 	}
 

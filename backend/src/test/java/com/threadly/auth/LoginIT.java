@@ -100,10 +100,8 @@ class LoginIT extends ApiIntegrationTest {
 	void acceptsIssuedTokenOnProtectedEndpoints() throws Exception {
 		String token = accessTokenFor("andrii");
 
-		// The endpoint does not exist yet, so a 404 proves the token passed authentication;
-		// without it the same call is answered with 401.
-		mockMvc.perform(get("/api/v1/posts").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-				.andExpect(status().isNotFound());
+		mockMvc.perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+				.andExpect(status().isOk());
 	}
 
 	@Test
@@ -111,7 +109,7 @@ class LoginIT extends ApiIntegrationTest {
 		String token = accessTokenFor("andrii");
 		String tampered = token.substring(0, token.lastIndexOf('.') + 1) + "not-a-valid-signature";
 
-		mockMvc.perform(get("/api/v1/posts").header(HttpHeaders.AUTHORIZATION, "Bearer " + tampered))
+		mockMvc.perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + tampered))
 				.andExpect(status().isUnauthorized());
 	}
 }
