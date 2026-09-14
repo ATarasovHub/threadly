@@ -7,10 +7,12 @@ import com.threadly.common.page.Cursor;
 import com.threadly.common.page.CursorPage;
 import com.threadly.common.page.CursorPaging;
 import com.threadly.follow.dto.UserSummaryResponse;
+import com.threadly.notification.NotificationEvents;
 import com.threadly.user.CurrentUserService;
 import com.threadly.user.User;
 import com.threadly.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ public class FollowService {
 	private final UserRepository users;
 	private final CurrentUserService currentUserService;
 	private final BlockService blockService;
+	private final ApplicationEventPublisher events;
 
 	/**
 	 * Follows an account.
@@ -47,6 +50,7 @@ public class FollowService {
 
 		try {
 			follows.save(Follow.of(me, target));
+			events.publishEvent(new NotificationEvents.Followed(me.getId(), target.getId()));
 		}
 		catch (DataIntegrityViolationException e) {
 			// Another request created the same edge in between; the desired state already holds.

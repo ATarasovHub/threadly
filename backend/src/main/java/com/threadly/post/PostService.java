@@ -5,6 +5,7 @@ import com.threadly.common.error.ResourceNotFoundException;
 import com.threadly.common.page.Cursor;
 import com.threadly.common.page.CursorPage;
 import com.threadly.common.page.CursorPaging;
+import com.threadly.notification.NotificationEvents;
 import com.threadly.post.dto.CreatePostRequest;
 import com.threadly.post.dto.PostResponse;
 import com.threadly.post.dto.UpdatePostRequest;
@@ -12,6 +13,7 @@ import com.threadly.user.CurrentUserService;
 import com.threadly.user.User;
 import com.threadly.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class PostService {
 	private final CurrentUserService currentUserService;
 	private final BlockService blockService;
 	private final PostAssembler assembler;
+	private final ApplicationEventPublisher events;
 
 	@Transactional
 	public PostResponse create(CreatePostRequest request) {
@@ -51,6 +54,8 @@ public class PostService {
 		}
 		try {
 			posts.save(Post.repost(original, me));
+			events.publishEvent(new NotificationEvents.PostReposted(
+					me.getId(), original.getAuthor().getId(), original.getId(), false));
 		}
 		catch (DataIntegrityViolationException e) {
 			// Concurrent duplicate; the post is reposted either way.
@@ -75,7 +80,10 @@ public class PostService {
 		Post original = requireVisible(originalId);
 		requireNotBlocked(original.getAuthor().getId(), "No post with id " + originalId);
 
-		return assembler.toResponse(posts.save(Post.quote(original, me, request.content())), me);
+		Post quote = posts.save(Post.quote(original, me, request.content()));
+		events.publishEvent(new NotificationEvents.PostReposted(
+				me.getId(), original.getAuthor().getId(), original.getId(), true));
+		return assembler.toResponse(quote, me);
 	}
 
 	/** Publishes a reply to an existing post. */
@@ -86,6 +94,8 @@ public class PostService {
 		requireNotBlocked(parent.getAuthor().getId(), "No post with id " + parentId);
 
 		Post reply = posts.save(Post.replyTo(parent, me, request.content()));
+		events.publishEvent(new NotificationEvents.PostReplied(
+				me.getId(), parent.getAuthor().getId(), reply.getId()));
 		return assembler.toResponse(reply, me);
 	}
 

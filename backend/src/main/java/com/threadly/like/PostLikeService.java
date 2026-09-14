@@ -2,11 +2,13 @@ package com.threadly.like;
 
 import com.threadly.block.BlockService;
 import com.threadly.common.error.ResourceNotFoundException;
+import com.threadly.notification.NotificationEvents;
 import com.threadly.post.Post;
 import com.threadly.post.PostRepository;
 import com.threadly.user.CurrentUserService;
 import com.threadly.user.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,7 @@ public class PostLikeService {
 	private final PostRepository posts;
 	private final CurrentUserService currentUserService;
 	private final BlockService blockService;
+	private final ApplicationEventPublisher events;
 
 	/** Idempotent, like following: a like is a state, and a retried request must not double it. */
 	@Transactional
@@ -31,6 +34,8 @@ public class PostLikeService {
 		}
 		try {
 			likes.save(PostLike.of(post, me));
+			events.publishEvent(new NotificationEvents.PostLiked(
+					me.getId(), post.getAuthor().getId(), post.getId()));
 		}
 		catch (DataIntegrityViolationException e) {
 			// Concurrent duplicate; the unique index already holds the desired state.
