@@ -50,6 +50,8 @@ Configuration is read from environment variables with local defaults; copy
 | POST   | `/api/v1/auth/refresh`   | cookie | Rotate the refresh token, get a new access token |
 | POST   | `/api/v1/auth/logout`    | cookie | Revoke the session                        |
 | GET    | `/api/v1/me`             | bearer | The authenticated account                 |
+| GET    | `/api/v1/users/{handle}` | bearer | A public profile, matched case-insensitively |
+| PATCH  | `/api/v1/me/profile`     | bearer | Edit your own profile                     |
 
 Access tokens are short-lived JWTs sent as `Authorization: Bearer`. The refresh token lives
 only in an HttpOnly, SameSite=Strict cookie, is stored server-side as a SHA-256 hash, and is
@@ -60,7 +62,7 @@ rotated on every use; replaying a rotated token revokes the whole session family
 - [x] Project skeleton
 - [x] Docker Compose infrastructure
 - [x] Authentication (registration, JWT, refresh tokens, roles)
-- [ ] Profiles
+- [x] Profiles
 - [ ] Posts, replies, reposts
 - [ ] Follow graph
 - [ ] Feeds with cursor pagination

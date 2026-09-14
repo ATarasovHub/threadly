@@ -1,5 +1,6 @@
 package com.threadly.profile;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -160,6 +161,70 @@ class ProfileControllerIT {
 						""".formatted("x".repeat(161))))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.errors.bio").isNotEmpty());
+	}
+
+	@Test
+	void servesAnotherAccountsProfileByHandle() throws Exception {
+		users.save(User.builder()
+				.username("Anna")
+				.email("anna@example.com")
+				.passwordHash(passwordEncoder.encode(PASSWORD))
+				.displayName("Anna")
+				.role(Role.USER)
+				.enabled(true)
+				.build());
+
+		// The handle in the URL is matched case-insensitively, so /anna and /Anna are one page.
+		mockMvc.perform(get("/api/v1/users/anna").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.username").value("Anna"))
+				.andExpect(jsonPath("$.joinedAt").isNotEmpty())
+				// A profile is public information; credentials and contact details are not.
+				.andExpect(jsonPath("$.email").doesNotExist())
+				.andExpect(jsonPath("$.role").doesNotExist());
+	}
+
+	@Test
+	void showsProfileEditsOnThePublicPage() throws Exception {
+		mockMvc.perform(patchProfile("""
+						{"bio":"Backend engineer","location":"Berlin"}
+						"""))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/api/v1/users/ANDRII").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.bio").value("Backend engineer"))
+				.andExpect(jsonPath("$.location").value("Berlin"));
+	}
+
+	@Test
+	void answersUnknownHandleWithNotFound() throws Exception {
+		mockMvc.perform(get("/api/v1/users/ghost").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.title").value("Not found"))
+				.andExpect(jsonPath("$.type").value("https://threadly.dev/problems/not-found"));
+	}
+
+	@Test
+	void hidesDisabledAccounts() throws Exception {
+		User disabled = users.save(User.builder()
+				.username("banned")
+				.email("banned@example.com")
+				.passwordHash(passwordEncoder.encode(PASSWORD))
+				.displayName("Banned")
+				.role(Role.USER)
+				.enabled(false)
+				.build());
+
+		mockMvc.perform(get("/api/v1/users/" + disabled.getUsername())
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void rejectsAnonymousProfileLookup() throws Exception {
+		mockMvc.perform(get("/api/v1/users/andrii"))
+				.andExpect(status().isUnauthorized());
 	}
 
 	@Test

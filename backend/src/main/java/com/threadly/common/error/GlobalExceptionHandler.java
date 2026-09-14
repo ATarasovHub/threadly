@@ -61,6 +61,15 @@ public class GlobalExceptionHandler {
 		return problem;
 	}
 
+	@ExceptionHandler(ResourceNotFoundException.class)
+	ProblemDetail onNotFound(ResourceNotFoundException exception) {
+		ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+		problem.setType(URI.create("https://threadly.dev/problems/not-found"));
+		problem.setTitle("Not found");
+		problem.setDetail(exception.getMessage());
+		return problem;
+	}
+
 	@ExceptionHandler(DuplicateResourceException.class)
 	ProblemDetail onDuplicate(DuplicateResourceException exception) {
 		ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
