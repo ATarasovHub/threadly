@@ -83,6 +83,15 @@ public class GlobalExceptionHandler {
 		return problem;
 	}
 
+	@ExceptionHandler(BadRequestException.class)
+	ProblemDetail onBadRequest(BadRequestException exception) {
+		ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+		problem.setType(URI.create("https://threadly.dev/problems/bad-request"));
+		problem.setTitle("Bad request");
+		problem.setDetail(exception.getMessage());
+		return problem;
+	}
+
 	@ExceptionHandler(InvalidCursorException.class)
 	ProblemDetail onInvalidCursor(InvalidCursorException exception) {
 		ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
