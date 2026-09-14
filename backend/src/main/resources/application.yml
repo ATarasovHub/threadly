@@ -15,6 +15,14 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+threadly:
+  jwt:
+    # Development-only fallback. Production must supply JWT_SECRET; anyone holding this value
+    # can mint valid tokens.
+    secret: ${JWT_SECRET:dev-only-secret-change-me-in-production-0123456789}
+    issuer: ${JWT_ISSUER:https://threadly.dev}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
+
 server:
   port: ${SERVER_PORT:8080}
 

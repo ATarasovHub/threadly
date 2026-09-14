@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -30,6 +31,19 @@ public class GlobalExceptionHandler {
 		problem.setTitle("Validation failed");
 		problem.setDetail("One or more fields are invalid.");
 		problem.setProperty("errors", errors);
+		return problem;
+	}
+
+	/**
+	 * Every authentication failure gets the same body. Distinguishing "no such account" from "wrong
+	 * password" or "account disabled" would let anyone probe which handles are registered.
+	 */
+	@ExceptionHandler(AuthenticationException.class)
+	ProblemDetail onAuthenticationFailure(AuthenticationException exception) {
+		ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+		problem.setType(URI.create("https://threadly.dev/problems/invalid-credentials"));
+		problem.setTitle("Invalid credentials");
+		problem.setDetail("The identifier or password is incorrect.");
 		return problem;
 	}
 

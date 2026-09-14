@@ -1,5 +1,7 @@
 package com.threadly.auth;
 
+import com.threadly.auth.dto.AuthenticationResponse;
+import com.threadly.auth.dto.LoginRequest;
 import com.threadly.auth.dto.RegisterRequest;
 import com.threadly.user.dto.UserResponse;
 import jakarta.validation.Valid;
@@ -22,5 +24,10 @@ public class AuthController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public UserResponse register(@Valid @RequestBody RegisterRequest request) {
 		return authService.register(request);
+	}
+
+	@PostMapping("/login")
+	public AuthenticationResponse login(@Valid @RequestBody LoginRequest request) {
+		return authService.login(request);
 	}
 }
