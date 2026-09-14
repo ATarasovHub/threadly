@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -108,6 +109,17 @@ class AuthControllerIT {
 				.andExpect(jsonPath("$.errors.username").isNotEmpty())
 				.andExpect(jsonPath("$.errors.email").isNotEmpty())
 				.andExpect(jsonPath("$.errors.password").isNotEmpty());
+	}
+
+	@Test
+	void answersInEnglishEvenWhenTheClientAsksForAnotherLanguage() throws Exception {
+		// The locale is pinned, so default Bean Validation messages cannot come back translated.
+		mockMvc.perform(post("/api/v1/auth/register")
+						.header(HttpHeaders.ACCEPT_LANGUAGE, "ru-RU,ru;q=0.9")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body("andrii", "not-an-email", "sup3rsecret", "Andrii")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.email").value("must be a well-formed email address"));
 	}
 
 	@Test
