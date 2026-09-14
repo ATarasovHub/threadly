@@ -1,5 +1,7 @@
 package com.threadly.profile;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -8,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.threadly.support.ApiIntegrationTest;
 import com.threadly.user.User;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
@@ -160,6 +164,75 @@ class ProfileControllerIT extends ApiIntegrationTest {
 		mockMvc.perform(get("/api/v1/users/" + disabled.getUsername())
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
 				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void countsFollowersFollowingAndPosts() throws Exception {
+		givenAccount("anna");
+		givenAccount("bob");
+		mockMvc.perform(asUser(post("/api/v1/users/anna/follow"), token))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(asUser(post("/api/v1/users/andrii/follow"), accessTokenFor("bob")))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(asUser(post("/api/v1/posts"), token)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content":"Hello"}
+								"""))
+				.andExpect(status().isCreated());
+
+		mockMvc.perform(asUser(get("/api/v1/users/andrii"), token))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.stats.followers").value(1))
+				.andExpect(jsonPath("$.stats.following").value(1))
+				.andExpect(jsonPath("$.stats.posts").value(1));
+	}
+
+	@Test
+	void reportsHowTheViewerRelatesToTheProfile() throws Exception {
+		givenAccount("anna");
+		mockMvc.perform(asUser(post("/api/v1/users/andrii/follow"), accessTokenFor("anna")))
+				.andExpect(status().isNoContent());
+
+		// Anna follows Andrii but he does not follow back.
+		mockMvc.perform(asUser(get("/api/v1/users/anna"), token))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.relationship.following").value(false))
+				.andExpect(jsonPath("$.relationship.followedBy").value(true));
+
+		mockMvc.perform(asUser(post("/api/v1/users/anna/follow"), token))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(asUser(get("/api/v1/users/anna"), token))
+				.andExpect(jsonPath("$.relationship.following").value(true));
+	}
+
+	@Test
+	void omitsTheRelationshipOnOnesOwnProfile() throws Exception {
+		mockMvc.perform(asUser(get("/api/v1/users/andrii"), token))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.relationship").doesNotExist());
+	}
+
+	@Test
+	void leavesDeletedPostsOutOfThePostCount() throws Exception {
+		String body = mockMvc.perform(asUser(post("/api/v1/posts"), token)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content":"Temporary"}
+								"""))
+				.andExpect(status().isCreated())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+		Matcher matcher = Pattern.compile("[{,]\"id\":(\\d+)").matcher(body);
+		assertThat(matcher.find()).isTrue();
+		long id = Long.parseLong(matcher.group(1));
+
+		mockMvc.perform(asUser(delete("/api/v1/posts/" + id), token))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(asUser(get("/api/v1/users/andrii"), token))
+				.andExpect(jsonPath("$.stats.posts").value(0));
 	}
 
 	@Test

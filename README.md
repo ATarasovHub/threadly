@@ -52,6 +52,20 @@ Configuration is read from environment variables with local defaults; copy
 | GET    | `/api/v1/me`             | bearer | The authenticated account                 |
 | GET    | `/api/v1/users/{handle}` | bearer | A public profile, matched case-insensitively |
 | PATCH  | `/api/v1/me/profile`     | bearer | Edit your own profile                     |
+| POST   | `/api/v1/posts`          | bearer | Publish a post                            |
+| GET    | `/api/v1/posts/{id}`     | bearer | Read a post                               |
+| PATCH  | `/api/v1/posts/{id}`     | bearer | Edit your own post                        |
+| DELETE | `/api/v1/posts/{id}`     | bearer | Soft-delete your own post                 |
+| GET    | `/api/v1/users/{handle}/posts` | bearer | An author's timeline, cursor-paginated |
+| POST   | `/api/v1/users/{handle}/follow` | bearer | Follow (idempotent)                |
+| DELETE | `/api/v1/users/{handle}/follow` | bearer | Unfollow (idempotent)              |
+| GET    | `/api/v1/users/{handle}/followers` | bearer | Followers, cursor-paginated     |
+| GET    | `/api/v1/users/{handle}/following` | bearer | Following, cursor-paginated     |
+
+Collections are paginated by cursor, never by offset: `?cursor=<token>&limit=20`. The token
+encodes the `(createdAt, id)` of the last row served, so rows written mid-pagination cannot
+shift the window and cause duplicates or gaps. A response carries `nextCursor`, or `null` on
+the last page.
 
 Access tokens are short-lived JWTs sent as `Authorization: Bearer`. The refresh token lives
 only in an HttpOnly, SameSite=Strict cookie, is stored server-side as a SHA-256 hash, and is
@@ -63,8 +77,8 @@ rotated on every use; replaying a rotated token revokes the whole session family
 - [x] Docker Compose infrastructure
 - [x] Authentication (registration, JWT, refresh tokens, roles)
 - [x] Profiles
-- [ ] Posts, replies, reposts
-- [ ] Follow graph
+- [x] Posts (replies and reposts still to come)
+- [x] Follow graph
 - [ ] Feeds with cursor pagination
 - [ ] Likes, bookmarks
 - [ ] Notifications

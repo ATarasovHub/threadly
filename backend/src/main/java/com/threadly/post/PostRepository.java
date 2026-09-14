@@ -13,6 +13,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	@Query("select p from Post p join fetch p.author where p.id = :id and p.deletedAt is null")
 	Optional<Post> findVisibleById(@Param("id") Long id);
 
+	@Query("select count(p) from Post p where p.author.id = :authorId and p.deletedAt is null")
+	long countVisibleByAuthorId(@Param("authorId") Long authorId);
+
 	/** First page of an author's timeline, newest first. */
 	@Query("""
 			select p from Post p
