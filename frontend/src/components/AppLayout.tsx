@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Home', end: true },
   { to: '/notifications', label: 'Notifications', end: false },
   { to: '/bookmarks', label: 'Bookmarks', end: false },
+  { to: '/settings', label: 'Settings', end: false },
 ] as const;
 
 export function AppLayout() {

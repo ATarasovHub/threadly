@@ -10,7 +10,10 @@ interface AuthState {
   loading: boolean;
   signIn: (identifier: string, password: string) => Promise<void>;
   signUp: (input: SignUpInput) => Promise<void>;
+  signInWithGoogle: (idToken: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Re-reads the account after it changes, such as a handle rename. */
+  refreshCurrentUser: () => Promise<void>;
 }
 
 export interface SignUpInput {
@@ -86,6 +89,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [loadCurrentUser],
   );
 
+  const signInWithGoogle = useCallback(
+    async (idToken: string) => {
+      // Identical to a password sign-in from here on: the response carries our own access token
+      // and sets our own refresh cookie.
+      await authenticate('/api/v1/auth/google', { idToken });
+      await loadCurrentUser();
+    },
+    [loadCurrentUser],
+  );
+
   const signOut = useCallback(async () => {
     try {
       await api.post('/api/v1/auth/logout');
@@ -98,8 +111,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient]);
 
   const value = useMemo<AuthState>(
-    () => ({ user, loading, signIn, signUp, signOut }),
-    [user, loading, signIn, signUp, signOut],
+    () => ({
+      user,
+      loading,
+      signIn,
+      signUp,
+      signInWithGoogle,
+      signOut,
+      refreshCurrentUser: loadCurrentUser,
+    }),
+    [user, loading, signIn, signUp, signInWithGoogle, signOut, loadCurrentUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

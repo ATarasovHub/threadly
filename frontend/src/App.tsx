@@ -8,6 +8,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { ThreadPage } from './pages/ThreadPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { BookmarksPage } from './pages/BookmarksPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 export function App() {
   const { user, loading } = useAuth();
@@ -40,6 +41,7 @@ export function App() {
         <Route path="/sign-up" element={<Navigate to="/" replace />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/bookmarks" element={<BookmarksPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/posts/:postId" element={<ThreadPage />} />
         {/* Profiles live at the root, the way /andrii reads on X. Declared last so it cannot
             shadow the fixed routes above. */}

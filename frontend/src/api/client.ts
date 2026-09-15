@@ -143,7 +143,7 @@ export const api = {
 
 /** Sign-in and sign-up deliberately bypass the refresh dance: there is no session yet. */
 export async function authenticate(
-  path: '/api/v1/auth/login' | '/api/v1/auth/refresh',
+  path: '/api/v1/auth/login' | '/api/v1/auth/refresh' | '/api/v1/auth/google',
   body?: unknown,
 ): Promise<AuthenticationResponse> {
   const session = await request<AuthenticationResponse>(path, {

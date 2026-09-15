@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
+import { GoogleButton, googleSignInAvailable } from '../auth/GoogleButton';
 import { Field } from '../components/Field';
 
 export function SignUpPage() {
-  const { user, signUp } = useAuth();
+  const { user, signUp, signInWithGoogle } = useAuth();
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -13,6 +14,15 @@ export function SignUpPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  async function onGoogleCredential(idToken: string) {
+    setError(null);
+    try {
+      await signInWithGoogle(idToken);
+    } catch {
+      setError('Could not sign up with Google.');
+    }
+  }
 
   if (user) {
     return <Navigate to="/" replace />;
@@ -97,6 +107,19 @@ export function SignUpPage() {
           {submitting ? 'Creating account…' : 'Create account'}
         </button>
       </form>
+
+
+      {googleSignInAvailable && (
+        <>
+          <div className="my-6 flex items-center gap-3 text-sm text-ink-muted">
+            <span className="h-px flex-1 bg-line" />
+            or
+            <span className="h-px flex-1 bg-line" />
+          </div>
+
+          <GoogleButton onCredential={onGoogleCredential} />
+        </>
+      )}
 
       <p className="mt-6 text-sm text-ink-muted">
         Already here?{' '}
