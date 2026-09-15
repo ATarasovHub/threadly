@@ -1,12 +1,14 @@
 package com.threadly.auth.dto;
 
+import com.threadly.common.validation.StrongPassword;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
- * @param password raw password; BCrypt only considers the first 72 bytes, hence the upper bound.
+ * @param password raw password; strength rules and the 72-byte BCrypt ceiling live in
+ *                 {@link StrongPassword}
  */
 public record RegisterRequest(
 		@NotBlank
@@ -20,7 +22,7 @@ public record RegisterRequest(
 		String email,
 
 		@NotBlank
-		@Size(min = 8, max = 72, message = "must be between 8 and 72 characters")
+		@StrongPassword
 		String password,
 
 		@NotBlank

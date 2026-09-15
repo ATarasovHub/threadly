@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
 import { GoogleButton, googleSignInAvailable } from '../auth/GoogleButton';
+import { PasswordChecklist } from '../auth/PasswordChecklist';
 import { Field } from '../components/Field';
 
 export function SignUpPage() {
@@ -82,16 +83,18 @@ export function SignUpPage() {
           error={fieldErrors.email}
           required
         />
-        <Field
-          label="Password"
-          type="password"
-          value={password}
-          onChange={setPassword}
-          autoComplete="new-password"
-          error={fieldErrors.password}
-          hint="At least 8 characters."
-          required
-        />
+        <div>
+          <Field
+            label="Password"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            autoComplete="new-password"
+            error={fieldErrors.password}
+            required
+          />
+          <PasswordChecklist password={password} />
+        </div>
 
         {error && (
           <p role="alert" className="rounded-lg bg-like/10 px-3 py-2 text-sm text-like">

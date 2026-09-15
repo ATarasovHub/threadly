@@ -32,7 +32,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @Import(TestcontainersConfiguration.class)
 public abstract class ApiIntegrationTest {
 
-	protected static final String PASSWORD = "sup3rsecret";
+	protected static final String PASSWORD = "Thread_ly2026";
 
 	@Autowired
 	protected MockMvc mockMvc;
