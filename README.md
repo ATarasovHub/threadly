@@ -128,6 +128,33 @@ ship together.
 The `prod` profile is on by default in the image. It turns on `Secure` cookies, trusts the
 platform's forwarded scheme headers, and narrows actuator to the health probe.
 
+### Database
+
+Set `DB_URL` to the provider's own connection string. Managed PostgreSQL requires TLS, and a URL
+assembled from separate host and database variables cannot carry `sslmode=require`:
+
+```
+DB_URL=jdbc:postgresql://<host>/<database>?sslmode=require
+DB_USER=<user>
+DB_PASSWORD=<password>
+```
+
+The separate `DB_HOST` / `DB_PORT` / `DB_NAME` variables remain the local default.
+
+### Fly.io
+
+`fly.toml` is in the repository. Rename `app` first — the name is globally unique.
+
+```bash
+fly auth signup
+fly launch --no-deploy
+fly secrets set DB_URL=... DB_USER=... DB_PASSWORD=... JWT_SECRET=$(openssl rand -base64 48)
+fly deploy
+```
+
+The machine suspends when idle and wakes on the next request. Set `min_machines_running = 1` to
+avoid the delay on the first visit; that is the part that costs money.
+
 ## Roadmap
 
 - [x] Project skeleton

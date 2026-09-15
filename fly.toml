@@ -1,0 +1,33 @@
+# Fly.io deployment. Rename `app` before the first deploy: the name is globally unique.
+app = "threadly"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  SPRING_PROFILES_ACTIVE = "prod"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_start_machines = true
+  # Suspending keeps the JVM's memory image, so a wake is far quicker than a cold start.
+  auto_stop_machines = "suspend"
+  # Set to 1 to keep the machine awake. Costs a few dollars a month and removes the first-visit
+  # delay, which matters if the link is going on a CV.
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    # A JVM with Flyway migrations needs longer than a scripting runtime before it answers.
+    grace_period = "60s"
+    method = "GET"
+    path = "/actuator/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  # 512 MB is enough to boot but leaves nothing for traffic; the JVM is sized from this via
+  # MaxRAMPercentage in the Dockerfile.
+  memory = "1gb"
