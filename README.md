@@ -107,6 +107,27 @@ An existing account is linked when the Google address matches it **and** Google 
 address as verified. Without that second condition, anyone able to register an address at Google
 could claim the Threadly account using it.
 
+## Deploying
+
+The repository root carries a Dockerfile that builds the client and serves it from the backend,
+so the whole application is one image on one origin:
+
+```bash
+docker build -t threadly .
+docker run -p 8080:8080   -e DB_HOST=... -e DB_NAME=... -e DB_USER=... -e DB_PASSWORD=...   -e JWT_SECRET=<at least 32 random characters>   threadly
+```
+
+`backend/Dockerfile` remains the API-only image used by the local compose stack, where the client
+runs on the Vite dev server instead.
+
+One origin is a deliberate choice, not a packaging convenience: the refresh cookie is
+`SameSite=Strict`, which is the reason CSRF protection can be disabled. Splitting the client onto
+its own domain would force the cookie to `SameSite=None` and remove that guarantee, so the two
+ship together.
+
+The `prod` profile is on by default in the image. It turns on `Secure` cookies, trusts the
+platform's forwarded scheme headers, and narrows actuator to the health probe.
+
 ## Roadmap
 
 - [x] Project skeleton

@@ -1,0 +1,38 @@
+# Production overrides. Activated with SPRING_PROFILES_ACTIVE=prod.
+spring:
+  jpa:
+    # Never let Hibernate touch the schema; Flyway owns it, and a surprise DDL in production is
+    # not something to leave switchable.
+    hibernate:
+      ddl-auto: validate
+
+server:
+  # The platform terminates TLS and forwards the original scheme and host. Without this, Spring
+  # believes every request arrived over plain HTTP and refuses to set the Secure refresh cookie.
+  forward-headers-strategy: framework
+  # Behind a proxy that already reports errors; no need to leak stack traces.
+  error:
+    include-message: never
+    include-stacktrace: never
+
+threadly:
+  auth:
+    # Non-negotiable in production: the refresh token must never travel over plain HTTP.
+    cookie-secure: true
+  rate-limit:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # No metrics endpoint on a public origin without authentication in front of it.
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO
+    com.threadly: INFO

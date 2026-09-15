@@ -59,7 +59,13 @@ public class SecurityConfig {
 						// The API description and its UI are public; every documented endpoint
 						// still enforces its own authentication.
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-						.anyRequest().authenticated())
+						// Anything else under /actuator is operational data, not public.
+						.requestMatchers("/actuator/**").authenticated()
+						.requestMatchers("/api/**").authenticated()
+						// Everything that is left is the built client: its bundle, and the paths
+						// React Router owns. A JavaScript bundle is public by nature, and the data
+						// it renders is still behind the rules above.
+						.anyRequest().permitAll())
 				.oauth2ResourceServer(oauth2 -> oauth2
 						.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthorityConverter))
 						.authenticationEntryPoint(problemDetailEntryPoint))
