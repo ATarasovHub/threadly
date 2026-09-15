@@ -23,6 +23,14 @@ public class ThreadlyUserDetailsService implements UserDetailsService {
 				.or(() -> users.findByEmailIgnoreCase(identifier))
 				.orElseThrow(() -> new UsernameNotFoundException("No account for " + identifier));
 
+		// An account created through Google has no password to compare against. Reporting it as
+		// unknown keeps the response identical to every other failed sign-in — the provider a
+		// given handle uses is not something a stranger should be able to probe for — and it
+		// avoids handing Spring Security a null password, which it would fail on with a 500.
+		if (!user.hasPassword()) {
+			throw new UsernameNotFoundException("Account " + identifier + " has no password");
+		}
+
 		return org.springframework.security.core.userdetails.User
 				.withUsername(user.getUsername())
 				.password(user.getPasswordHash())

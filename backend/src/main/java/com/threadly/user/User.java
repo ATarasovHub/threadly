@@ -40,8 +40,12 @@ public class User extends Auditable {
 	@Setter
 	private String email;
 
-	/** BCrypt hash; never leaves the persistence layer. */
-	@Column(name = "password_hash", nullable = false, length = 100)
+	/**
+	 * BCrypt hash; never leaves the persistence layer.
+	 *
+	 * <p>Null for an account created through an external provider, which has no password to hash.
+	 */
+	@Column(name = "password_hash", length = 100)
 	@Setter
 	private String passwordHash;
 
@@ -82,6 +86,10 @@ public class User extends Auditable {
 		this.displayName = displayName;
 		this.role = role == null ? Role.USER : role;
 		this.enabled = enabled;
+	}
+
+	public boolean hasPassword() {
+		return passwordHash != null;
 	}
 
 	/**
