@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* One dark palette, the way X itself reads. Declared as theme tokens so components refer to
+   semantic names rather than repeating hex values. */
+@theme {
+  --color-canvas: #0b0d12;
+  --color-surface: #14171f;
+  --color-surface-hover: #1b1f29;
+  --color-line: #232733;
+  --color-ink: #e7e9ea;
+  --color-ink-muted: #8b98a5;
+  --color-brand: #5b8def;
+  --color-brand-strong: #7aa3ff;
+  --color-like: #f4245e;
+  --color-repost: #00ba7c;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}

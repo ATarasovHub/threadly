@@ -17,7 +17,7 @@ A Twitter/X-style social network built as a full-stack portfolio project.
 ```
 threadly/
 ├── backend/    Spring Boot application (Gradle, Kotlin DSL)
-└── frontend/   React + TypeScript client (added in a later step)
+└── frontend/   React + TypeScript client (Vite, TanStack Query, Tailwind)
 ```
 
 ## Running locally
@@ -35,8 +35,20 @@ cd backend
 ./gradlew bootRun
 ```
 
-The API is served on http://localhost:8080 and the health probe on
+The API is served on http://localhost:8080, its description on
+http://localhost:8080/swagger-ui.html, and the health probe on
 http://localhost:8080/actuator/health.
+
+Then the client:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+It runs on http://localhost:5173, which is the origin the backend allows through CORS by
+default.
 
 Configuration is read from environment variables with local defaults; copy
 `.env.example` to `.env` to override them.
@@ -79,8 +91,8 @@ rotated on every use; replaying a rotated token revokes the whole session family
 - [x] Profiles
 - [x] Posts (replies and reposts still to come)
 - [x] Follow graph
-- [ ] Feeds with cursor pagination
-- [ ] Likes, bookmarks
-- [ ] Notifications
-- [ ] React frontend
-- [ ] Production hardening (OpenAPI, rate limiting, metrics)
+- [x] Feeds with cursor pagination
+- [x] Likes, bookmarks, replies, reposts
+- [x] Notifications
+- [x] React frontend
+- [x] Production hardening (OpenAPI, rate limiting, Docker)
