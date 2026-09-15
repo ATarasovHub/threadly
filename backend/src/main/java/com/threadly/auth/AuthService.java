@@ -67,6 +67,18 @@ public class AuthService {
 		String username = ((UserDetails) authentication.getPrincipal()).getUsername();
 		User user = users.findByUsernameIgnoreCase(username).orElseThrow();
 
+		return startSession(user);
+	}
+
+	/**
+	 * Opens a session for an account whose identity has already been established.
+	 *
+	 * <p>Shared with external sign-in: Google proves who the caller is, but the session, the
+	 * access token and the rotating refresh cookie are all Threadly's own and identical either
+	 * way.
+	 */
+	@Transactional
+	public AuthenticatedSession startSession(User user) {
 		return session(user, refreshTokenService.issue(user).value());
 	}
 

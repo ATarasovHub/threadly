@@ -29,6 +29,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-threadly}
       JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-in-production-0123456789}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     ports:
       - "${SERVER_PORT:-8080}:8080"
     depends_on:

@@ -2,6 +2,7 @@ package com.threadly.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.threadly.common.ratelimit.RateLimitProperties;
+import com.threadly.identity.google.GoogleProperties;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -18,7 +19,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
  */
 @Configuration
 @EnableConfigurationProperties({JwtProperties.class, AuthProperties.class, RateLimitProperties.class,
-		CorsConfig.CorsProperties.class})
+		CorsConfig.CorsProperties.class, GoogleProperties.class})
 public class JwtConfig {
 
 	private static final String HMAC_ALGORITHM = "HmacSHA256";

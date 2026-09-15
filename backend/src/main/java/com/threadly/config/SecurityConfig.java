@@ -53,7 +53,8 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login",
-								"/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
+								"/api/v1/auth/refresh", "/api/v1/auth/logout",
+								"/api/v1/auth/google").permitAll()
 						.requestMatchers("/actuator/health/**").permitAll()
 						// The API description and its UI are public; every documented endpoint
 						// still enforces its own authentication.

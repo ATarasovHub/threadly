@@ -1,10 +1,12 @@
 package com.threadly.auth;
 
 import com.threadly.auth.dto.AuthenticationResponse;
+import com.threadly.auth.dto.GoogleSignInRequest;
 import com.threadly.auth.dto.LoginRequest;
 import com.threadly.auth.dto.RegisterRequest;
 import com.threadly.auth.refresh.InvalidRefreshTokenException;
 import com.threadly.auth.refresh.RefreshCookieFactory;
+import com.threadly.identity.google.GoogleAuthService;
 import com.threadly.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class AuthController {
 
 	private final AuthService authService;
 	private final RefreshCookieFactory refreshCookieFactory;
+	private final GoogleAuthService googleAuthService;
 
 	@PostMapping("/register")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -35,6 +38,13 @@ public class AuthController {
 	@PostMapping("/login")
 	public ResponseEntity<AuthenticationResponse> login(@Valid @RequestBody LoginRequest request) {
 		return withRefreshCookie(authService.login(request));
+	}
+
+	/** Exchanges a Google ID token for a Threadly session. */
+	@PostMapping("/google")
+	public ResponseEntity<AuthenticationResponse> signInWithGoogle(
+			@Valid @RequestBody GoogleSignInRequest request) {
+		return withRefreshCookie(googleAuthService.signIn(request.idToken()));
 	}
 
 	@PostMapping("/refresh")

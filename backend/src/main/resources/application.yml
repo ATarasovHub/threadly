@@ -41,6 +41,12 @@ threadly:
     write-capacity: ${RATE_LIMIT_WRITE_CAPACITY:60}
     period: ${RATE_LIMIT_PERIOD:1m}
 
+  oauth:
+    google:
+      # Empty by default: without a client id the Google endpoint stays switched off rather than
+      # accepting tokens it cannot check the audience of.
+      client-id: ${GOOGLE_CLIENT_ID:}
+
   cors:
     # The Vite dev server. Production adds its real origin here; wildcards are not an option
     # because the refresh cookie travels with credentials.
